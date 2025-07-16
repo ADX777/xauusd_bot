@@ -1,14 +1,13 @@
 import requests
-import time
 import datetime
 import pytz
-import telegram
+import asyncio
+from telegram import Bot
 import os
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 CHANNEL_ID = os.getenv('CHAT_ID')
 GOLD_API_KEY = os.getenv('GOLD_API_KEY')
-SLEEP_SECONDS = 3600
 
 def get_btc_price():
     try:
@@ -19,9 +18,7 @@ def get_btc_price():
 
 def get_xauusd_price():
     try:
-        headers = {
-            'x-access-token': GOLD_API_KEY
-        }
+        headers = {'x-access-token': GOLD_API_KEY}
         r = requests.get('https://www.goldapi.io/api/XAU/USD', headers=headers)
         if r.status_code == 200:
             data = r.json()
@@ -36,18 +33,17 @@ def is_weekend_night():
     now = datetime.datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     weekday = now.weekday()
     hour = now.hour
-    if weekday == 4 and hour >= 23:
-        return True
-    if weekday == 5:
-        return True
-    if weekday == 6:
-        return True
-    if weekday == 0 and hour < 7:
-        return True
-    return False
+    return (weekday == 4 and hour >= 23) or weekday in [5, 6] or (weekday == 0 and hour < 7)
 
-def run_bot():
-    bot = telegram.Bot(token=BOT_TOKEN)
+async def sleep_until_next_hour():
+    now = datetime.datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
+    next_hour = (now + datetime.timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+    delta = (next_hour - now).total_seconds()
+    print(f"⏳ Đợi {int(delta)} giây đến {next_hour.strftime('%H:%M')}...")
+    await asyncio.sleep(delta)
+
+async def run_bot():
+    bot = Bot(token=BOT_TOKEN)
     while True:
         if is_weekend_night():
             print("🛑 Cuối tuần, bot nghỉ...")
@@ -59,11 +55,11 @@ def run_bot():
                 message = f"""🕒 {now}
 Giá XAUUSD: ${xau:,.2f}
 Giá BTC: ${btc:,.2f}"""
-                bot.send_message(chat_id=CHANNEL_ID, text=message)
+                await bot.send_message(chat_id=CHANNEL_ID, text=message)
                 print("✅ Đã gửi:", message)
             else:
                 print("⚠️ Lỗi khi lấy giá")
-        time.sleep(SLEEP_SECONDS)
+        await sleep_until_next_hour()
 
 if __name__ == '__main__':
-    run_bot()
+    asyncio.run(run_bot())
