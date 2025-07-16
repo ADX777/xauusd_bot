@@ -5,11 +5,9 @@ import pytz
 import telegram
 import os
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # Đặt biến môi trường trên Railway
-CHANNEL_ID = os.getenv("CHANNEL_ID")  # Đặt biến môi trường trên Railway
-GOLD_API_KEY = os.getenv("GOLD_API_KEY")  # Đặt biến môi trường trên Railway
-
-SLEEP_SECONDS = 3600  # 1 giờ
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHANNEL_ID = os.getenv("CHANNEL_ID")
+GOLD_API_KEY = os.getenv("GOLD_API_KEY")
 
 def get_btc_price():
     try:
@@ -43,6 +41,11 @@ def is_weekend_night():
         return True
     return False
 
+def seconds_until_next_hour():
+    now = datetime.datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
+    next_hour = (now + datetime.timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+    return (next_hour - now).total_seconds()
+
 def run_bot():
     bot = telegram.Bot(token=BOT_TOKEN)
     while True:
@@ -51,7 +54,7 @@ def run_bot():
         else:
             btc = get_btc_price()
             xau = get_xauusd_price()
-            now = datetime.datetime.now(pytz.timezone('Asia/Ho_Chi_Minh')).strftime('%H:%M | Ngày %d/%m/%Y')
+            now_str = datetime.datetime.now(pytz.timezone('Asia/Ho_Chi_Minh')).strftime('%H:%M | Ngày %d/%m/%Y')
 
             if btc and xau:
                 message = f"""📢 [FOREX LIVE] Cập nhật giá mới nhất:
@@ -59,13 +62,16 @@ def run_bot():
 🟡 Vàng (XAUUSD): ${xau:,.2f}
 🟠 Bitcoin (BTC): ${btc:,.2f}
 
-🕒 Thời gian: {now}
+🕒 Thời gian: {now_str}
 """
                 bot.send_message(chat_id=CHANNEL_ID, text=message)
                 print("✅ Đã gửi:\n", message)
             else:
                 print("⚠️ Lỗi khi lấy giá")
-        time.sleep(SLEEP_SECONDS)
+
+        sleep_time = seconds_until_next_hour()
+        print(f"⏳ Chờ {sleep_time:.0f} giây tới giờ tròn tiếp theo...\n")
+        time.sleep(sleep_time)
 
 if __name__ == '__main__':
     run_bot()
