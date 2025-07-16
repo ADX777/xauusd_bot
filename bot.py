@@ -1,12 +1,14 @@
+import os
 import requests
 import time
 import datetime
 import pytz
 import telegram
 
-BOT_TOKEN = 'YOUR_BOT_TOKEN'
-CHANNEL_ID = '@forexlive777'
-SLEEP_SECONDS = 3600
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+CHANNEL_ID = os.environ.get("CHAT_ID")  # Đảm bảo bạn cũng set CHAT_ID trong Railway
+
+SLEEP_SECONDS = 3600  # 1 giờ
 
 def get_btc_price():
     try:
@@ -27,13 +29,13 @@ def is_weekend_night():
     now = datetime.datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     weekday = now.weekday()
     hour = now.hour
-    if weekday == 4 and hour >= 23:
+    if weekday == 4 and hour >= 23:  # Thứ 6 sau 23h
         return True
-    if weekday == 5:
+    if weekday == 5:  # Thứ 7
         return True
-    if weekday == 6:
+    if weekday == 6:  # Chủ nhật
         return True
-    if weekday == 0 and hour < 7:
+    if weekday == 0 and hour < 7:  # Thứ 2 trước 7h sáng
         return True
     return False
 
