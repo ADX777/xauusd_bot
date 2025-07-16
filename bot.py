@@ -1,14 +1,14 @@
-import os
 import requests
 import time
 import datetime
 import pytz
 import telegram
+import os
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
-CHANNEL_ID = os.environ.get("CHAT_ID")  # Đảm bảo bạn cũng set CHAT_ID trong Railway
-
-SLEEP_SECONDS = 3600  # 1 giờ
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHANNEL_ID = os.getenv("CHAT_ID")
+GOLD_API_KEY = os.getenv("GOLD_API_KEY")
+SLEEP_SECONDS = 3600
 
 def get_btc_price():
     try:
@@ -19,9 +19,12 @@ def get_btc_price():
 
 def get_xauusd_price():
     try:
-        r = requests.get('https://api.metals.live/v1/spot')
-        data = r.json()
-        return float(data[0]['gold'])
+        headers = {
+            'x-access-token': GOLD_API_KEY,
+            'Content-Type': 'application/json'
+        }
+        r = requests.get('https://www.goldapi.io/api/XAU/USD', headers=headers)
+        return float(r.json()['price'])
     except:
         return None
 
@@ -29,13 +32,13 @@ def is_weekend_night():
     now = datetime.datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     weekday = now.weekday()
     hour = now.hour
-    if weekday == 4 and hour >= 23:  # Thứ 6 sau 23h
+    if weekday == 4 and hour >= 23:
         return True
-    if weekday == 5:  # Thứ 7
+    if weekday == 5:
         return True
-    if weekday == 6:  # Chủ nhật
+    if weekday == 6:
         return True
-    if weekday == 0 and hour < 7:  # Thứ 2 trước 7h sáng
+    if weekday == 0 and hour < 7:
         return True
     return False
 
